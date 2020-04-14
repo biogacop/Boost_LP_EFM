@@ -1,0 +1,15 @@
+{
+"url": "http://bigg.ucsd.edu/static/models/e_coli_core.json",
+"modo": "real",
+"datadir0": "./",
+"datadir": "../Models//e_coli_core/",
+"sparse": "sparse.txt",
+"reversibles": "reversibles.txt",
+"bloqueadas": "bloqueadas.txt",
+"matrix_file": "densa.txt",
+"runs": 50,
+"loops" : 2000,
+"target" : "ejemploReact",
+"random" : "s",
+"verbose": "False"
+}
