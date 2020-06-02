@@ -1,8 +1,6 @@
 {
-"url": "http://bigg.ucsd.edu/static/models/iAF1260.json",
+"url": "http://bigg.ucsd.edu/static/models/e_coli_core.json",
 "modo": "real",
-"datadir0": "./",
-"datadir": "./",
 "sparse": "sparse.txt",
 "reversibles": "reversibles.txt",
 "bloqueadas": "bloqueadas.txt",

@@ -1,4 +1,4 @@
-
+#!/usr/bin/python
 
 
 # DESCARGA E IMPORTACION DE LA MATRIZ
@@ -11,7 +11,7 @@ import csv
 import sys
 import os
 
-sys.path.append("../comunes/utiles.py")
+sys.path.append("./commons")
 from utiles import Tools
 
 
@@ -34,8 +34,10 @@ class Cell:
         self.INPUTS     = set([])   #Conjunto de reacciones de salida
         self.OUTPUTS    = set([])   #Conjunto de reacciones de entrada
 
-        self.REV       = set([])
-
+        self.REV       = set([])    #Imported from a file
+        self.fullREV   = []         #Built from REV with respective pairs. Full list
+        self.asocfullREV   = []     #Built from REV with respective pairs. Full list of indexes
+        
         self.BLOCKED    = set([])   #Reacciones bloqueadas
 
         sufijo          = '_rev'
@@ -69,6 +71,7 @@ class Cell:
                     self.lREACT.append(row[1])
                     self.INPUTS.add(row[1])         #Candidato a ser de input
                     self.OUTPUTS.add(row[1])        # .. y candidato a ser de output
+
                     if (row[1] in self.REV):
                         re = row[1]+sufijo
                         self.asocREACT[re] = len(self.asocREACT)
@@ -76,6 +79,12 @@ class Cell:
                         self.lREACT.append(re)
                         self.INPUTS.add(re)         #Candidato a ser de input
                         self.OUTPUTS.add(re)        # .. y candidato a ser de output
+                        #List of reversible reactions
+                        self.fullREV.append(row[1])
+                        self.asocfullREV.append(self.asocREACT[row[1]])
+                        self.fullREV.append(re)
+                        self.asocfullREV.append(self.asocREACT[re])
+                        
                         
 
         #En una segunda pasada creamos la matriz
@@ -100,8 +109,6 @@ class Cell:
                     if (st < 0):
                         if (r in self.INPUTS):
                             self.INPUTS.remove(r) # No es reaccion de entrada si pruce
-                    
-            
         
 
         self.nREACT = len(self.REACT)
@@ -110,6 +117,70 @@ class Cell:
         self.Slist =  np.matrix(np.transpose(self.S)).tolist()
         #self.Slist =  np.matrix(self.S).tolist()
 
+    #External metabolites detection
+    def externalMetab(self):
+        externals = []
+        for m in self.lMETAS:
+            signo = 0
+            external = True
+            for r in self.lREACT:
+                st = self.S[self.asocMETAS[m]][self.asocREACT[r]]
+                if (external and (st!=0)):
+                    if (signo == 0):
+                        if (st<0): signo = -1
+                        else: signo = 1
+                    else:
+                        if (st != 0):
+                                external = ((signo == -1) and (st<0)) or ((signo == 1) and (st>0))
+            if external: externals.append(m)
+        return externals
+
+    #Generic consistent removel of  metabolites
+    #Applied to remove external metabolites. See externalMetab()
+    # @@listm, list of metabolites named by its literal
+    def removeMetab(self, listm):
+
+        #Firstly, cleaning up the metabolites
+        for m in listm:
+            asoc = self.asocMETAS[m]
+            self.S = np.delete(self.S,asoc,0)
+            del self.asocMETAS[m]
+            #Asociative dict needs to be updated
+            for k in self.asocMETAS:
+                if asoc < self.asocMETAS[k]:
+                   self.asocMETAS[k] -=1
+
+            self.lMETAS.remove(m)
+            self.METAS.remove(m)
+
+
+        #Secondly, removing unused reactions in any equation
+        #Detection
+        toremove = []
+        for r in self.lREACT:
+            useful = False
+            for m in self.lMETAS:
+                useful = useful or (self.S[self.asocMETAS[m]][self.asocREACT[r]] != 0)
+            if (not useful): toremove.append(r) 
+        #Removing 
+        for r in toremove:
+            asoc = self.asocREACT[r]
+            self.S = np.delete(self.S,asoc,1)
+            del self.asocREACT[r]
+            #Asociative dict needs to be updated
+            for k in self.asocREACT:
+                if asoc < self.asocREACT[k]:
+                   self.asocREACT[k] -=1
+
+            self.lREACT.remove(r)
+            self.REACT.remove(r)
+    
+        #Coherencia a variables calculadas
+        self.nMETAS = len(self.lMETAS)
+        self.nREACT = len(self.lREACT)
+        self.Slist =  np.matrix(np.transpose(self.S)).tolist()
+            
+        
     #Dado el vector soporte de una solucion, se devuelve la submatriz
     def subproblem(self, _supp):
         T = Tools()
@@ -155,29 +226,57 @@ if __name__ == '__main__':
     import json 
     import sys
 
-    print ("Ejecutando Cell.py en modo script")
+    print ("Running cell.py en modo script")
 
-    fconfig = "../basico/config_example.json"
+    datadir = "../models/toymodel/"
+    fconfig = datadir + "config_toymodel.json" 
+    print (fconfig)
     with open(fconfig, 'r') as f:
         config = json.load(f)
 
-    datadir = config["datadir"] 
     SPARSE  = datadir + config["sparse"] 
     REV     = datadir + config["reversibles"] 
     C = Cell(SPARSE)
+    print("\n Stoichiometric matrix S")
     print (C.S)
+    print("\n Transposed S")
     print (np.transpose(C.S))
 
-    print(C.reacts(['r1','m1','r2']))
-    print( C.reacts_assoc(['r1','m1','r2']))
-    print( C.supp(['r1','m1','r2']))
+    e = ['r1','m1','r2']
+    print("\n Support of " + ",".join(e))
+    print( C.supp(e))
 
-#print METAS
-#print asocMETAS
-#print REACT
-#print asocREACT
-#print
-#print 'accoa_c', S[asocMETAS['accoa_c']]
+    print("\n Flux (only reacts) " + ",".join(e))
+    print(C.reacts(e))
 
+    print("\n Submatrix of S corresponding to flux e = " + ",".join(e))
+    print(C.subproblem(C.supp(e)))
+
+    print("\n External metabolites in S") 
+    print(C.externalMetab())
+    #print( C.reacts_assoc(e))
+
+    #After remove external metabolites
+    C.removeMetab(C.externalMetab());
+    print("\n Stoichiometric matrix S")
+    print (C.S)
+
+ 
+    datadir = "../models/e_coli_core/" 
+    fconfig = datadir + "config_e_coli_core.json"
+    print("\n " + fconfig)
+    with open(fconfig, 'r') as f:
+        config = json.load(f)
+
+    SPARSE  = datadir + config["sparse"] 
+    REV     = datadir + config["reversibles"] 
+    C = Cell(SPARSE,REV)
+    print("\nReactions = %d" % C.nREACT)
+    print("\n External metabolites in S") 
+    print(C.externalMetab())
+
+    print("\n Reversible reactions in S") 
+    print(C.fullREV)
+    print(C.asocfullREV)
 
 
