@@ -1,0 +1,15 @@
+{
+"url": "http://bigg.ucsd.edu/static/models/iAF1260.json",
+"modo": "real",
+"datadir0": "./",
+"datadir": "../Models//iAF1260",
+"sparse": "sparse.txt",
+"reversibles": "reversibles.txt",
+"bloqueadas": "bloqueadas.txt",
+"matrix_file": "densa.txt",
+"runs": 50,
+"loops" : 2000,
+"target" : "ejemploReact",
+"random" : "s",
+"verbose": "False"
+}
