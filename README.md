@@ -13,7 +13,7 @@ When finish, some stats will be shown in the console. The set of solutions (EFMs
 ## Bibtex
 
 
-<code>
+```
 @article{10.1093/bioinformatics/btaa280,
     author = {Guil, Francisco and Hidalgo, José F and García, José M},
     title = "{Boosting the extraction of Elementary Flux Modes in Genome-Scale Metabolic Networks using the Linear Programming approach}",
@@ -27,6 +27,7 @@ When finish, some stats will be shown in the console. The set of solutions (EFMs
     note = {btaa280},
     eprint = {https://academic.oup.com/bioinformatics/advance-article-pdf/doi/10.1093/bioinformatics/btaa280/33146167/btaa280.pdf},
 }
-</code>
 
+
+```
 
